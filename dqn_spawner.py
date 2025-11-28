@@ -1,4 +1,4 @@
-# dqn_agent.py
+# dqn_spawner.py
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -11,64 +11,62 @@ class QNetwork(nn.Module):
     def __init__(self, state_dim, action_dim):
         super().__init__()
         self.net = nn.Sequential(
-            nn.Linear(state_dim, 128),
+            nn.Linear(state_dim, 256),
             nn.ReLU(),
-            nn.Linear(128, 128),
+            nn.Linear(256, 256),
             nn.ReLU(),
-            nn.Linear(128, action_dim)
+            nn.Linear(256, action_dim)
         )
 
     def forward(self, x):
         return self.net(x)
 
 
-class DQNAgent:
+class SpawnerAgent:
     def __init__(self):
-        self.state_dim = 6
-        self.action_dim = 3  # left, stay, right
+        self.state_dim = 4  
+        """
+        State is:
+        [basket_x_norm, basket_y_norm, prev_spawn_x_norm, prev_type_norm]
+        """
 
-        # Hyperparams
+        self.action_dim = 500   # (5 fruits × 100 columns)
+
         self.gamma = 0.99
         self.epsilon = 1.0
         self.eps_min = 0.05
         self.eps_decay = 0.995
-        self.lr = 1e-3
+        self.lr = 1e-4
 
-        # Replay buffer
-        self.buffer = deque(maxlen=50000)
+        self.buffer = deque(maxlen=80000)
         self.batch_size = 64
 
-        # Device
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
 
-        # Networks
         self.q = QNetwork(self.state_dim, self.action_dim).to(self.device)
         self.target = QNetwork(self.state_dim, self.action_dim).to(self.device)
         self.target.load_state_dict(self.q.state_dict())
 
-        # Optimizer, loss
         self.optim = optim.Adam(self.q.parameters(), lr=self.lr)
         self.loss_fn = nn.MSELoss()
 
-        # For target update interval
-        self.target_update_counter = 0
-        self.target_update_freq = 2000
+        self.update_freq = 2000
+        self.update_count = 0
 
-    # -----------------------------
+    # -----------------------------------------------------
     def act(self, state):
-        """Epsilon-greedy action selection"""
         if random.random() < self.epsilon:
-            return random.randint(0, 2)
+            return random.randint(0, self.action_dim - 1)
 
         s = torch.FloatTensor(state).unsqueeze(0).to(self.device)
         qvals = self.q(s)
         return torch.argmax(qvals).item()
 
-    # -----------------------------
+    # -----------------------------------------------------
     def remember(self, s, a, r, s2, done):
         self.buffer.append((s, a, r, s2, done))
 
-    # -----------------------------
+    # -----------------------------------------------------
     def train_step(self):
         if len(self.buffer) < self.batch_size:
             return
@@ -82,10 +80,7 @@ class DQNAgent:
         r = torch.FloatTensor(r).to(self.device)
         d = torch.FloatTensor(d).to(self.device)
 
-        # Q(s,a)
         qvals = self.q(s).gather(1, a.unsqueeze(1)).squeeze()
-
-        # Target Q(s2)
         next_qvals = self.target(s2).max(1)[0]
         expected = r + (1 - d) * self.gamma * next_qvals
 
@@ -95,23 +90,23 @@ class DQNAgent:
         loss.backward()
         self.optim.step()
 
-        # Update target network
-        self.target_update_counter += 1
-        if self.target_update_counter % self.target_update_freq == 0:
+        # Periodic target update
+        self.update_count += 1
+        if self.update_count % self.update_freq == 0:
             self.update_target()
 
-    # -----------------------------
+    # -----------------------------------------------------
     def update_target(self):
         self.target.load_state_dict(self.q.state_dict())
 
-    # -----------------------------
+    # -----------------------------------------------------
     def decay(self):
         self.epsilon = max(self.eps_min, self.epsilon * self.eps_decay)
 
-    # -----------------------------
-    def save(self, path="catcher_dqn.pth"):
+    # -----------------------------------------------------
+    def save(self, path="spawner_dqn.pth"):
         torch.save(self.q.state_dict(), path)
 
-    def load(self, path="catcher_dqn.pth"):
+    def load(self, path="spawner_dqn.pth"):
         self.q.load_state_dict(torch.load(path))
         self.update_target()
