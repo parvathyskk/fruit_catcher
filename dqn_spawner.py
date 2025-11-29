@@ -104,9 +104,10 @@ class SpawnerAgent:
         self.epsilon = max(self.eps_min, self.epsilon * self.eps_decay)
 
     # -----------------------------------------------------
-    def save(self, path="spawner_dqn.pth"):
+    def save(self, path="rl_spawner_model.pth"):
         torch.save(self.q.state_dict(), path)
 
-    def load(self, path="spawner_dqn.pth"):
+    def load(self, path="rl_spawner_model.pth"):
         self.q.load_state_dict(torch.load(path))
         self.update_target()
+
