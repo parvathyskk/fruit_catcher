@@ -1,33 +1,57 @@
 import pygame
 from env import FruitCatcherEnv
+from dqn_spawner import SpawnerAgent
+import time
 
 env = FruitCatcherEnv()
-env.reset()
+agent = SpawnerAgent()
 
+state = env.get_spawner_state()
+running = True
 clock = pygame.time.Clock()
 
-running = True
 while running:
-    action = 0   # default: stay
+    clock.tick(30)
 
-    # Human controls
+    # Human controls basket
+    keys = pygame.key.get_pressed()
+    if keys[pygame.K_LEFT]:
+        env.basket_x -= 3
+    if keys[pygame.K_RIGHT]:
+        env.basket_x += 3
+
+    env.basket_x = max(0, min(env.grid_width - 1, env.basket_x))
+
+    # Quit
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
 
-    keys = pygame.key.get_pressed()
-    if keys[pygame.K_LEFT]:
-        action = -1
-    if keys[pygame.K_RIGHT]:
-        action = 1
+    # RL chooses when object does not exist
+    if env.object_type is None:
+        action = agent.act(state)
+        env.rl_spawn(action)
 
-    reward, done = env.step(action)
+    # Step environment
+    reward, done = env.step(0)  # 0 = no horizontal movement (human already moves)
+
+    next_state = env.get_spawner_state()
+
+    agent.remember(state, action, reward, next_state, done)
+    agent.train_step()
+    agent.decay()
+
+    state = next_state
+
     env.render()
 
     if done:
-        print("GAME OVER. SCORE:", env.score)
-        running = False
+        print("\n===== GAME OVER =====")
+        print("Spawner Training Episode Ended")
+        
+        agent.update_target()
+        agent.save()
 
-    clock.tick(30)
-
-pygame.quit()
+        time.sleep(1)
+        env.reset()
+        state = env.get_spawner_state()
