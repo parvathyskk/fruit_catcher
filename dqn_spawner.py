@@ -74,11 +74,11 @@ class SpawnerAgent:
         batch = random.sample(self.buffer, self.batch_size)
         s, a, r, s2, d = zip(*batch)
 
-        s = torch.FloatTensor(s).to(self.device)
-        s2 = torch.FloatTensor(s2).to(self.device)
-        a = torch.LongTensor(a).to(self.device)
-        r = torch.FloatTensor(r).to(self.device)
-        d = torch.FloatTensor(d).to(self.device)
+        s = torch.FloatTensor(np.array(s)).to(self.device)
+        s2 = torch.FloatTensor(np.array(s2)).to(self.device)
+        a = torch.LongTensor(np.array(a)).to(self.device)
+        r = torch.FloatTensor(np.array(r)).to(self.device)
+        d = torch.FloatTensor(np.array(d)).to(self.device)
 
         qvals = self.q(s).gather(1, a.unsqueeze(1)).squeeze()
         next_qvals = self.target(s2).max(1)[0]
@@ -94,6 +94,8 @@ class SpawnerAgent:
         self.update_count += 1
         if self.update_count % self.update_freq == 0:
             self.update_target()
+
+        return loss.item()
 
     # -----------------------------------------------------
     def update_target(self):
