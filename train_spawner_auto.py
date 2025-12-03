@@ -1,7 +1,7 @@
 import pygame
 from env import FruitCatcherEnv
 from dqn_spawner import SpawnerAgent
-from evaluator import Evaluator
+from evaluator_rl_throw import Evaluator
 import time
 import numpy as np
 
@@ -91,15 +91,20 @@ def main():
             next_state = env.get_spawner_state()
             agent.remember(current_state, current_action, episode_reward, next_state, done)
             
-            loss = agent.train_step()
+            result = agent.train_step()
             agent.decay()
             
-            evaluator.log_step(loss, agent.epsilon)
+            if result is not None:
+                loss, avg_q = result
+                evaluator.log_step(loss, agent.epsilon, avg_q)
+            else:
+                evaluator.log_step(None, agent.epsilon, None)
             waiting_for_result = False
             
             # Optional: Print less frequently
             # if agent.epsilon > agent.eps_min:
             #     print(f"Drop finished. Reward: {episode_reward}, Eps: {agent.epsilon:.3f}")
+            print(f"Buffer size: {len(agent.buffer)}")
 
         # ------------------------------------------------
         # 5. Render (Optional - can comment out for max speed)

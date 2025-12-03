@@ -10,6 +10,7 @@ class Evaluator:
         # Per-step metrics
         self.losses = []
         self.epsilons = []
+        self.q_values = []
         
         # Per-episode metrics
         self.episode_rewards = []
@@ -18,11 +19,13 @@ class Evaluator:
         
         self.episode_count = 0
 
-    def log_step(self, loss, epsilon):
+    def log_step(self, loss, epsilon, q_value):
         """Log metrics for a single training step."""
         if loss is not None:
             self.losses.append(loss)
         self.epsilons.append(epsilon)
+        if q_value is not None:
+            self.q_values.append(q_value)
 
     def log_episode(self, total_reward, final_score, lives_left):
         """Log metrics at the end of an episode."""
@@ -31,15 +34,16 @@ class Evaluator:
         self.episode_scores.append(final_score)
         self.episode_lives.append(lives_left)
         
-        print(f"[Episode {self.episode_count}] Score: {final_score}, Lives: {lives_left}, Avg Loss: {np.mean(self.losses[-10:]) if self.losses else 0:.4f}")
+        avg_q = np.mean(self.q_values[-10:]) if self.q_values else 0.0
+        print(f"[Episode {self.episode_count}] Score: {final_score}, Lives: {lives_left}, Avg Loss: {np.mean(self.losses[-10:]) if self.losses else 0:.4f}, Avg Q: {avg_q:.4f}")
 
     def plot(self):
         """Generate and save plots of the metrics."""
         try:
-            plt.figure(figsize=(12, 8))
+            plt.figure(figsize=(15, 10))
             
             # 1. Scores
-            plt.subplot(2, 2, 1)
+            plt.subplot(2, 3, 1)
             plt.plot(self.episode_scores, label="Score")
             plt.title("Episode Scores")
             plt.xlabel("Episode")
@@ -47,14 +51,14 @@ class Evaluator:
             plt.grid(True)
             
             # 2. Rewards
-            plt.subplot(2, 2, 2)
+            plt.subplot(2, 3, 2)
             plt.plot(self.episode_rewards, label="Total Reward", color="orange")
             plt.title("Episode Total Rewards")
             plt.xlabel("Episode")
             plt.grid(True)
             
             # 3. Loss
-            plt.subplot(2, 2, 3)
+            plt.subplot(2, 3, 3)
             if self.losses:
                 # Plot moving average of loss to reduce noise
                 window = 50
@@ -69,9 +73,23 @@ class Evaluator:
             plt.grid(True)
             
             # 4. Epsilon
-            plt.subplot(2, 2, 4)
+            plt.subplot(2, 3, 4)
             plt.plot(self.epsilons, label="Epsilon", color="green")
             plt.title("Epsilon Decay")
+            plt.xlabel("Step")
+            plt.grid(True)
+            
+            # 5. Q-Values
+            plt.subplot(2, 3, 5)
+            if self.q_values:
+                # Plot moving average of Q-values
+                window = 50
+                if len(self.q_values) > window:
+                    avg_q = np.convolve(self.q_values, np.ones(window)/window, mode='valid')
+                    plt.plot(avg_q, label="Avg Q-Value (MA)", color="purple")
+                else:
+                    plt.plot(self.q_values, label="Avg Q-Value", color="purple")
+            plt.title("Average Q-Values")
             plt.xlabel("Step")
             plt.grid(True)
             

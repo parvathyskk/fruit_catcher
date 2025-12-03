@@ -95,7 +95,7 @@ class SpawnerAgent:
         if self.update_count % self.update_freq == 0:
             self.update_target()
 
-        return loss.item()
+        return loss.item(), qvals.mean().item()
 
     # -----------------------------------------------------
     def update_target(self):

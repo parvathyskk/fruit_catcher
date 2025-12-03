@@ -27,6 +27,7 @@ clock = pygame.time.Clock()
 
 episode = 1
 episode_loss = []
+episode_q = []
 state = env.reset()
 
 print(f"--- Starting Automated Training for {TOTAL_EPISODES} Episodes ---")
@@ -40,9 +41,9 @@ while running and episode <= TOTAL_EPISODES:
         if event.type == pygame.QUIT:
             running = False
 
-    # -----------------------------------
+    
     # AUTO THROWER (Simulates Human)
-    # -----------------------------------
+   
     if env.object_type is None:
         # Randomly choose object (1-4: fruits, 5: bomb)
         obj_id = random.randint(1, 5)
@@ -50,9 +51,9 @@ while running and episode <= TOTAL_EPISODES:
         throw_x = random.randint(0, env.grid_width - 1)
         env.human_spawn(obj_id, throw_x)
 
-    # -----------------------------------
+
     # RL AGENT CONTROL
-    # -----------------------------------
+    
     action = agent.act(state)
     next_state, reward, done = env.step(action)
 
@@ -61,18 +62,18 @@ while running and episode <= TOTAL_EPISODES:
     agent.remember(state, action, reward, next_state, done)
     
     # Train and track loss
-    loss = agent.train_step()
-    if loss is not None:
+    result = agent.train_step()
+    if result is not None:
+        loss, avg_q = result
         episode_loss.append(loss)
+        episode_q.append(avg_q)
         
     # Decay epsilon (exploration rate)
     agent.decay()
 
     state = next_state
 
-    # -----------------------------------
-    # RENDER (Optional: comment out for faster training)
-    # -----------------------------------
+   #render___may
     env.draw()
 
     # -----------------------------------
@@ -81,6 +82,7 @@ while running and episode <= TOTAL_EPISODES:
     if done:
         # Calculate episode metrics
         avg_loss = np.mean(episode_loss) if episode_loss else 0.0
+        avg_q_val = np.mean(episode_q) if episode_q else 0.0
         
         # Log metrics
         evaluator.log_episode(
@@ -88,7 +90,8 @@ while running and episode <= TOTAL_EPISODES:
             score=env.score,
             lives=env.lives,
             avg_loss=avg_loss,
-            epsilon=agent.epsilon
+            epsilon=agent.epsilon,
+            avg_q=avg_q_val
         )
         
         # Plot every 5 episodes
@@ -105,6 +108,7 @@ while running and episode <= TOTAL_EPISODES:
         
         episode += 1
         episode_loss = []
+        episode_q = []
 
 print("--- Automated Training Completed ---")
 pygame.quit()

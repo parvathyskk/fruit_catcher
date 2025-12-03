@@ -10,17 +10,18 @@ class Evaluator:
         
         # Initialize log file with headers if it doesn't exist
         if not os.path.exists(self.log_file):
-            df = pd.DataFrame(columns=["episode", "score", "lives", "avg_loss", "epsilon"])
+            df = pd.DataFrame(columns=["episode", "score", "lives", "avg_loss", "epsilon", "avg_q"])
             df.to_csv(self.log_file, index=False)
 
-    def log_episode(self, episode, score, lives, avg_loss, epsilon):
+    def log_episode(self, episode, score, lives, avg_loss, epsilon, avg_q):
         """Log metrics for a single episode."""
         record = {
             "episode": episode,
             "score": score,
             "lives": lives,
             "avg_loss": avg_loss,
-            "epsilon": epsilon
+            "epsilon": epsilon,
+            "avg_q": avg_q
         }
         self.metrics.append(record)
         
@@ -28,7 +29,7 @@ class Evaluator:
         df = pd.DataFrame([record])
         df.to_csv(self.log_file, mode='a', header=False, index=False)
         
-        print(f"Episode {episode}: Score={score}, Lives={lives}, Avg Loss={avg_loss:.4f}, Epsilon={epsilon:.4f}")
+        print(f"Episode {episode}: Score={score}, Lives={lives}, Avg Loss={avg_loss:.4f}, Epsilon={epsilon:.4f}, Avg Q={avg_q:.4f}")
 
     def plot_metrics(self):
         """Generate and save plots for training metrics."""
@@ -40,7 +41,7 @@ class Evaluator:
             if len(df) < 2:
                 return
 
-            fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 10))
+            fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(10, 15))
 
             # Plot Score
             ax1.plot(df['episode'], df['score'], label='Score', color='blue')
@@ -55,6 +56,13 @@ class Evaluator:
             ax2.set_xlabel('Episode')
             ax2.set_ylabel('Loss')
             ax2.grid(True)
+
+            # Plot Avg Q-Value
+            ax3.plot(df['episode'], df['avg_q'], label='Avg Q-Value', color='green')
+            ax3.set_title('Average Q-Value per Episode')
+            ax3.set_xlabel('Episode')
+            ax3.set_ylabel('Avg Q-Value')
+            ax3.grid(True)
 
             plt.tight_layout()
             plt.savefig(self.plot_file)

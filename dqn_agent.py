@@ -170,16 +170,16 @@ class DQNAgent:
         if (self.train_step_counter % self.target_update_interval) == 0:
             self.update_target()
             
-        return loss.item()
+        return loss.item(), q_pred.mean().item()
 
     # -------------------------
     def update_target(self):
-        """Hard copy online weights to target network"""
+      
         self.target.load_state_dict(self.q.state_dict())
 
     # -------------------------
     def decay(self):
-        """Decay epsilon (call once per frame or per episode depending on preference)"""
+        
         self.epsilon = max(self.eps_min, self.epsilon * self.eps_decay)
 
     # -------------------------
