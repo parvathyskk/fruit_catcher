@@ -80,9 +80,15 @@ class SpawnerAgent:
         r = torch.FloatTensor(np.array(r)).to(self.device)
         d = torch.FloatTensor(np.array(d)).to(self.device)
 
-        qvals = self.q(s).gather(1, a.unsqueeze(1)).squeeze()
+        # full Q predictions for measurement
+        q_all = self.q(s)
+        qvals = q_all.gather(1, a.unsqueeze(1)).squeeze()
         next_qvals = self.target(s2).max(1)[0]
         expected = r + (1 - d) * self.gamma * next_qvals
+
+        # snapshot before update
+        with torch.no_grad():
+            q_all_before = self.q(s).detach().cpu()
 
         loss = self.loss_fn(qvals, expected.detach())
 
@@ -90,12 +96,24 @@ class SpawnerAgent:
         loss.backward()
         self.optim.step()
 
+        # measure average absolute change in Q-values for this batch
+        try:
+            with torch.no_grad():
+                q_all_after = self.q(s).detach().cpu()
+                q_delta = float(torch.mean(torch.abs(q_all_after - q_all_before)).item())
+        except Exception:
+            q_delta = None
+
         # Periodic target update
         self.update_count += 1
         if self.update_count % self.update_freq == 0:
             self.update_target()
 
+<<<<<<< HEAD
         return loss.item(), qvals.mean().item()
+=======
+        return loss.item(), q_delta
+>>>>>>> b7d0811 (graph changes ppp)
 
     # -----------------------------------------------------
     def update_target(self):
@@ -104,6 +122,16 @@ class SpawnerAgent:
     # -----------------------------------------------------
     def decay(self):
         self.epsilon = max(self.eps_min, self.epsilon * self.eps_decay)
+
+    def get_max_q(self, state):
+        """Compute max Q for a given spawner state (returns float or None on failure)."""
+        try:
+            s = torch.FloatTensor(state).unsqueeze(0).to(self.device)
+            with torch.no_grad():
+                qvals = self.q(s)
+                return float(qvals.max().item())
+        except Exception:
+            return None
 
     # -----------------------------------------------------
     def save(self, path="spawner_dqn.pth"):

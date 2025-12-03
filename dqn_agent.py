@@ -147,9 +147,12 @@ class DQNAgent:
         r = torch.tensor(r_batch, dtype=torch.float32, device=self.device) # [B]
         done = torch.tensor(d_batch, dtype=torch.float32, device=self.device) # [B]
 
-        # Q(s,a) predicted by online network (select only the taken actions)
+        # Q(s,a) predicted by online network (all actions)
         q_all = self.q(s)                                 # [B, action_dim]
         q_pred = q_all.gather(1, a.unsqueeze(1)).squeeze(1)  # [B]
+        # snapshot of Q values before update (for convergence measurement)
+        with torch.no_grad():
+            q_all_before = self.q(s).detach().cpu()
 
         # target using the target network
         with torch.no_grad():
@@ -169,8 +172,20 @@ class DQNAgent:
         self.train_step_counter += 1
         if (self.train_step_counter % self.target_update_interval) == 0:
             self.update_target()
+<<<<<<< HEAD
             
         return loss.item(), q_pred.mean().item()
+=======
+        # measure average absolute change in Q-values for this batch
+        try:
+            with torch.no_grad():
+                q_all_after = self.q(s).detach().cpu()
+                q_delta = float(torch.mean(torch.abs(q_all_after - q_all_before)).item())
+        except Exception:
+            q_delta = None
+
+        return loss.item(), q_delta
+>>>>>>> b7d0811 (graph changes ppp)
 
     # -------------------------
     def update_target(self):
@@ -181,6 +196,20 @@ class DQNAgent:
     def decay(self):
         
         self.epsilon = max(self.eps_min, self.epsilon * self.eps_decay)
+
+    def get_max_q(self, state):
+        """Return the max Q-value for a given state (float)."""
+        try:
+            if isinstance(state, np.ndarray):
+                s = torch.from_numpy(state.astype(np.float32)).unsqueeze(0).to(self.device)
+            else:
+                s = state.float().unsqueeze(0).to(self.device)
+
+            with torch.no_grad():
+                qvals = self.q(s)  # [1, action_dim]
+                return float(qvals.max().item())
+        except Exception:
+            return None
 
     # -------------------------
     # utility helpers

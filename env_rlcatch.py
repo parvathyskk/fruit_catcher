@@ -43,7 +43,7 @@
 #         self.lives = 4
 #         self.bombs_caught = 0  
 
-#     # --------------------------
+#     
 #     def reset(self): #begining of each episode
 #         self.score = 0
 #         self.lives = 4 #reset life
@@ -51,7 +51,7 @@
 #         self.throw_x = 0
 #         return self.get_state()
 
-#     # --------------------------
+#     
 #     def get_state(self): #state vector- dqn
 #         return np.array([
 #             self.basket_x / self.grid_width,
@@ -62,7 +62,7 @@
 #             self.lives / 3
 #         ], dtype=np.float32)
 
-#     # --------------------------
+#     
 #     def human_spawn(self, obj_id, x_pos):
 #         """Human throws fruit/bomb"""
 #         self.throw_x = max(0, min(self.grid_width - 1, x_pos)) #within grid
@@ -78,14 +78,14 @@
 #             self.fruit_index = obj_id - 1
 #             self.object_img = self.fruit_imgs[self.fruit_index]
 
-#     # --------------------------
+#     
 #     def check_catch(self):
 #         """Returns True if basket catches object"""
 #         basket_left = self.basket_x
 #         basket_right = self.basket_x + self.basket_w
 #         return basket_left <= self.object_x <= basket_right
 
-#     # --------------------------
+#     
 #     def step(self, action):
 #         """
 #         action:
@@ -139,7 +139,7 @@
 
 #         return self.get_state(), reward, done
 
-#     # --------------------------
+#     
 #     def draw(self):
 #         self.screen.fill((50, 50, 50))
 
@@ -181,9 +181,6 @@ class FruitCatcherEnv:
         self.screen = pygame.display.set_mode((self.width, self.height))
         pygame.display.set_caption("Fruit Catcher RL + Human Throw")
 
-        # --------------------------
-        # FIX 1 — SCALE ALL IMAGES
-        # --------------------------
         def load_scaled(path):
             img = pygame.image.load(path)
             w = img.get_width() // 2
@@ -219,7 +216,7 @@ class FruitCatcherEnv:
         self.lives = 4
         self.bombs_caught = 0  
 
-    # --------------------------
+    
     def reset(self):
         self.score = 0
         self.lives = 4
@@ -227,7 +224,7 @@ class FruitCatcherEnv:
         self.throw_x = 0
         return self.get_state()
 
-    # --------------------------
+    
     def get_state(self):
         return np.array([
             self.basket_x / self.grid_width,
@@ -238,7 +235,7 @@ class FruitCatcherEnv:
             self.lives / 3
         ], dtype=np.float32)
 
-    # --------------------------
+    
     def human_spawn(self, obj_id, x_pos):
         self.throw_x = max(0, min(self.grid_width - 1, x_pos))
         self.object_x = self.throw_x
@@ -254,15 +251,15 @@ class FruitCatcherEnv:
             self.object_img = self.fruit_imgs[self.fruit_index]
 
         # DEBUG — print when object appears
-        print(f"SPAWN: type={self.object_type} x={self.object_x} y={self.object_y}")
+        #print(f"SPAWN: type={self.object_type} x={self.object_x} y={self.object_y}")
 
-    # --------------------------
+    
     def check_catch(self):
         basket_left = self.basket_x
         basket_right = self.basket_x + self.basket_w
         return basket_left <= self.object_x <= basket_right
 
-    # --------------------------
+    
     def step(self, action):
 
         speed = 3
@@ -270,9 +267,7 @@ class FruitCatcherEnv:
             self.basket_x = max(0, self.basket_x - speed)
         elif action == 2:
             self.basket_x = min(self.grid_width - self.basket_w - 1, self.basket_x + speed)
-
-        # IMPORTANT:
-        # If no fruit exists → return state (NO CHANGES)
+        # If no fruit exists =return state (NO CHANGES)
         if self.object_type is None:
             return self.get_state(), 0, False
 
@@ -311,13 +306,11 @@ class FruitCatcherEnv:
             self.object_type = None
 
         return self.get_state(), reward, done
-
-    # --------------------------
+    
     def draw(self):
 
         self.screen.fill((50, 50, 50))
 
-        # SCORE + LIVES
         font = pygame.font.SysFont("Arial", 24)
         self.screen.blit(font.render(f"Score: {self.score}", True, (255,255,255)), (10, 10))
         self.screen.blit(font.render(f"Lives: {self.lives}", True, (255,50,50)), (10, 40))

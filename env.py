@@ -16,7 +16,6 @@ class FruitCatcherEnv:
         self.screen = pygame.display.set_mode((self.width, self.height))
         pygame.display.set_caption("Fruit Catcher Game")
 
-        # ================= LOAD IMAGES FIRST =================
         def load_scaled(path):
             img = pygame.image.load(path)
             w = img.get_width() // 2
@@ -48,23 +47,23 @@ class FruitCatcherEnv:
         self.object_img = None
 
         self.score = 0
-        self.lives = 3
+        self.lives = 4
 
         # Font for score
         self.font = pygame.font.SysFont("Arial", 24)
 
-    # ==========================================================
+   
     def reset(self):
         self.score = 0
-        self.lives = 3
+        self.lives = 4
         # No auto-spawn for RL
         self.object_type = None
         self.object_img = None
         return self.get_spawner_state()
 
-    # ==========================================================
+   
     # RL SPAWNER METHODS
-    # ==========================================================
+   
     def get_spawner_state(self):
         return np.array([
             self.basket_x / self.grid_width,           # catcher position
@@ -74,8 +73,8 @@ class FruitCatcherEnv:
         ], dtype=np.float32)
 
     def rl_spawn(self, action):
-        fruit_id = action // 100   # 0..4  (0–3 fruits, 4=bomb)
-        x_pos = action % 100       # 0..99
+        fruit_id = action // 100   # 0-4  (0–3 fruits, 4=bomb)
+        x_pos = action % 100       # 0-99
 
         self.object_x = x_pos
         self.object_y = 0
@@ -87,7 +86,7 @@ class FruitCatcherEnv:
             self.object_type = f"fruit_{fruit_id + 1}"
             self.object_img = self.fruit_imgs[fruit_id]
 
-    # ==========================================================
+   
     def spawn_object(self):
         self.object_x = random.randint(0, self.grid_width - 1)
         self.object_y = 0
@@ -102,7 +101,7 @@ class FruitCatcherEnv:
             index = int(self.object_type.split("_")[1]) - 1
             self.object_img = self.fruit_imgs[index]
 
-    # ==========================================================
+   
     def step(self, action):
         """Action: -1 = left, 0 = stay, 1 = right"""
 
@@ -112,7 +111,7 @@ class FruitCatcherEnv:
         # Move basket
         self.basket_x += action
 
-        HALF_BASKET = 7     # 90px basket width → 15 grid cells → half = 7
+        HALF_BASKET = 7     # 90px basket width = 15 grid cells =half = 7
 
         # Clamp basket inside screen using full width
         self.basket_x = max(HALF_BASKET, min(self.grid_width - HALF_BASKET - 1, self.basket_x))
@@ -121,21 +120,17 @@ class FruitCatcherEnv:
         if self.object_type is None:
             return reward, done
 
-        # ---- Move falling object ----
+        # Move falling object
         self.object_y += 1
 
-        # Basket width is 90px → 90/6 = 15 grid cells
+        # Basket width is 90px = 90/6 = 15 grid cells
         # Catch range = ±7
         CATCH_RANGE = 7
         
-        # ---- Check object reached basket level ----
+        # Check object reached basket level 
         if self.object_y >= self.basket_y - 1:
 
             caught = abs(self.object_x - self.basket_x) <= CATCH_RANGE
-
-            # ------------------------
-            # CASE 1: OBJECT CAUGHT
-            # ------------------------
             if caught:
                 if self.object_type == "fruit_1":
                     reward = -10
@@ -153,25 +148,21 @@ class FruitCatcherEnv:
                     reward = 15  # Reduced from 50 to prevent spam
                     self.lives -= 1
 
-            # ------------------------
-            # CASE 2: OBJECT MISSED
-            # ------------------------
+           
             else:
-                # Missed bomb → bonus for human, bad for agent
+                # Missed bomb = bonus for human, bad for agent
                 if self.object_type == "bomb":
                     reward = -10 # Increased penalty from -5
                     self.score += 5
-                # Missed fruit → bad for human, good for agent
+                # Missed fruit = bad for human, good for agent
                 else:
                     reward = 15  # Increased reward from 10
 
-            # Remove object (RL will spawn next)
+            # Remove object
             self.object_type = None
             self.object_img = None
 
-        # ------------------------
-        # END CONDITIONS
-        # ------------------------
+       
         if self.lives <= 0:
             done = True
 
@@ -181,7 +172,7 @@ class FruitCatcherEnv:
 
         return reward, done
 
-    # ==========================================================
+   
     def render(self):
         self.screen.fill((50, 50, 50))
 
@@ -197,8 +188,6 @@ class FruitCatcherEnv:
             self.basket_img,
             (self.basket_x * self.scale, self.basket_y * self.scale)
         )
-
-        # ======== Draw Score & Lives ========
         score_text = self.font.render(f"Score: {self.score}", True, (255,255,255))
         lives_text = self.font.render(f"Lives: {self.lives}", True, (255,100,100))
 

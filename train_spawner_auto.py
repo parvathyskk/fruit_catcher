@@ -2,28 +2,39 @@ import pygame
 from env import FruitCatcherEnv
 from dqn_spawner import SpawnerAgent
 from evaluator_rl_throw import Evaluator
+<<<<<<< HEAD
 import time
+=======
+>>>>>>> b7d0811 (graph changes ppp)
 import numpy as np
 
+TOTAL_EPISODES = 20
+LOG_INTERVAL = 10
+REPLAY_BUFFER_SIZE = 80000
+Q_CONV_WINDOW = 100
+Q_CONV_THRESHOLD = 0.001
+Q_CONV_PATIENCE = 5
+
 def main():
-    # Initialize Environment, Agent, and Evaluator
+    print("\nFRUIT CATCHER - THROWER AGENT TRAINING\n")
+    
     env = FruitCatcherEnv()
     agent = SpawnerAgent()
     evaluator = Evaluator(save_dir="evaluation_results")
     
-    # Try to load existing model
     try:
         agent.load()
-        print("Loaded existing model.")
-    except:
-        print("No existing model found, starting fresh.")
-
-    # Training Parameters
-    TOTAL_EPISODES = 100
-    current_episode = 0
+        print("Loaded existing thrower model.")
+    except FileNotFoundError:
+        print("Starting fresh.\n")
     
+    print(f"Config: Episodes={TOTAL_EPISODES}, Batch Size={agent.batch_size}")
+    print(f"Replay Buffer Size: {REPLAY_BUFFER_SIZE}\n")
+    
+    current_episode = 0
     clock = pygame.time.Clock()
     running = True
+    q_conv_counter = 0
 
     # RL State Management
     current_state = env.get_spawner_state()
@@ -31,66 +42,56 @@ def main():
     episode_reward = 0
     waiting_for_result = False
 
-    print(f"Starting Automated Training for {TOTAL_EPISODES} episodes...")
+    print(f"--- Episode {current_episode + 1} Start ---")
 
     while running and current_episode < TOTAL_EPISODES:
-        # Run faster than human speed (e.g., 120 FPS or unlimited)
-        # Set to 0 for max speed, or 60/120 to watch it
-        clock.tick(120) 
+        clock.tick(120)
 
-        # ------------------------------------------------
-        # 1. BOT CATCHER LOGIC
-        # ------------------------------------------------
-        # Simple heuristic: Move towards the object
         bot_action = 0
         if env.object_type is not None:
-            # If it's a fruit, try to catch it
             if "fruit" in env.object_type:
                 if env.basket_x < env.object_x:
-                    bot_action = 1  # Move Right (Slower)
+                    bot_action = 1
                 elif env.basket_x > env.object_x:
                     bot_action = -1 # Move Left (Slower)
             
             # If it's a bomb, try to avoid it
             elif env.object_type == "bomb":
-                # If bomb is to the right, move left
                 if env.object_x > env.basket_x:
-                     bot_action = -1
-                # If bomb is to the left, move right
+                    bot_action = -1
                 elif env.object_x < env.basket_x:
-                     bot_action = 1
-                # If bomb is directly above, move anywhere (e.g. left)
+                    bot_action = 1
                 else:
                     bot_action = -1
 
-        # Quit check
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+                break
 
-        # ------------------------------------------------
-        # 2. RL Logic (Spawn Decision)
-        # ------------------------------------------------
         if env.object_type is None and not waiting_for_result:
             current_state = env.get_spawner_state()
+            # record max-q for this decision so evaluator can log convergence
+            try:
+                last_max_q = agent.get_max_q(current_state)
+            except Exception:
+                last_max_q = None
+
             current_action = agent.act(current_state)
             env.rl_spawn(current_action)
             episode_reward = 0
             waiting_for_result = True
 
-        # ------------------------------------------------
-        # 3. Step Environment
-        # ------------------------------------------------
         reward, done = env.step(bot_action)
         episode_reward += reward
 
-        # ------------------------------------------------
-        # 4. RL Learning (End of Drop)
-        # ------------------------------------------------
+       
+        #RL learning
         if waiting_for_result and env.object_type is None:
             next_state = env.get_spawner_state()
             agent.remember(current_state, current_action, episode_reward, next_state, done)
             
+<<<<<<< HEAD
             result = agent.train_step()
             agent.decay()
             
@@ -99,40 +100,80 @@ def main():
                 evaluator.log_step(loss, agent.epsilon, avg_q)
             else:
                 evaluator.log_step(None, agent.epsilon, None)
+=======
+            res = agent.train_step()
+            agent.decay()
+
+            loss_val = None
+            q_delta = None
+            if res is not None:
+                if isinstance(res, tuple) or (hasattr(res, '__len__') and len(res) == 2):
+                    loss_val, q_delta = res
+                else:
+                    loss_val = res
+
+            # pass the recorded max_q for this decision and q_delta for convergence
+            evaluator.log_step(loss_val, agent.epsilon, max_q=locals().get('last_max_q', None), q_delta=q_delta)
+
+            # Q convergence check for thrower evaluator
+            if q_delta is not None and len(evaluator.q_deltas) >= Q_CONV_WINDOW:
+                if len(evaluator.q_deltas) % Q_CONV_WINDOW == 0:
+                    recent_avg = float(np.mean(evaluator.q_deltas[-Q_CONV_WINDOW:]))
+                    if recent_avg < Q_CONV_THRESHOLD:
+                        q_conv_counter += 1
+                    else:
+                        q_conv_counter = 0
+
+                    if q_conv_counter >= Q_CONV_PATIENCE:
+                        print(f"Q-value convergence detected (thrower): avg change={recent_avg:.6e} (< {Q_CONV_THRESHOLD}); stopping training.")
+                        running = False
+                        break
+>>>>>>> b7d0811 (graph changes ppp)
             waiting_for_result = False
             
-            # Optional: Print less frequently
+            
             # if agent.epsilon > agent.eps_min:
             #     print(f"Drop finished. Reward: {episode_reward}, Eps: {agent.epsilon:.3f}")
+<<<<<<< HEAD
             print(f"Buffer size: {len(agent.buffer)}")
 
         # ------------------------------------------------
         # 5. Render (Optional - can comment out for max speed)
         # ------------------------------------------------
+=======
+        
+>>>>>>> b7d0811 (graph changes ppp)
         env.render()
-
-        # ------------------------------------------------
-        # 6. Episode Handling
-        # ------------------------------------------------
         if done:
             current_episode += 1
-            print(f"Episode {current_episode}/{TOTAL_EPISODES} Completed. Score: {env.score}, Lives: {env.lives}")
-            
             evaluator.log_episode(episode_reward, env.score, env.lives)
             
+            avg_loss = np.mean([l for l in evaluator.losses if l is not None]) if evaluator.losses else 0.0
+            
+            status = "PASS" if env.score > 0 else "FAIL"
+            print(f"{status} Episode {current_episode:3d}/{TOTAL_EPISODES} | "
+                  f"Score: {env.score:4d} | Lives: {env.lives:2d} | "
+                  f"Reward: {episode_reward:6.2f} | Loss: {avg_loss:.6f} | "
+                  f"Epsilon: {agent.epsilon:.4f}")
+            
+            if current_episode % LOG_INTERVAL == 0:
+                evaluator.plot()
+            
             agent.update_target()
-            agent.save() # Save every episode to be safe
+            agent.save()
 
             env.reset()
-            
             current_state = env.get_spawner_state()
             current_action = None
             episode_reward = 0
             waiting_for_result = False
+            if current_episode < TOTAL_EPISODES:
+                print(f"\n--- Episode {current_episode + 1} Start ---")
 
     print("\n===== TRAINING COMPLETE =====")
     evaluator.plot()
     pygame.quit()
+
 
 if __name__ == "__main__":
     main()
