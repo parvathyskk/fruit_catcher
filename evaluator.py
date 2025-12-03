@@ -8,7 +8,6 @@ class Evaluator:
         self.save_dir = save_dir
         os.makedirs(self.save_dir, exist_ok=True)
         
-<<<<<<< HEAD
         # Initialize log file with headers if it doesn't exist
         if not os.path.exists(self.log_file):
             df = pd.DataFrame(columns=["episode", "score", "lives", "avg_loss", "epsilon", "avg_q"])
@@ -25,23 +24,13 @@ class Evaluator:
             "avg_q": avg_q
         }
         self.metrics.append(record)
-=======
-        self.step_losses = []
-        self.step_epsilons = []
-        self.step_max_q_values = []
-        self.step_q_deltas = []
->>>>>>> b7d0811 (graph changes ppp)
         
         self.episode_scores = []
         self.episode_lives = []
         self.episode_avg_losses = []
         self.episode_rewards = []
         
-<<<<<<< HEAD
         print(f"Episode {episode}: Score={score}, Lives={lives}, Avg Loss={avg_loss:.4f}, Epsilon={epsilon:.4f}, Avg Q={avg_q:.4f}")
-=======
-        self.episode_count = 0
->>>>>>> b7d0811 (graph changes ppp)
 
     def log_step(self, loss, epsilon, max_q=None, q_delta=None):
         if loss is not None:
@@ -107,7 +96,6 @@ class Evaluator:
             plt.xlabel("Step")
             plt.grid(True, alpha=0.3)
 
-<<<<<<< HEAD
             fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(10, 15))
 
             # Plot Score
@@ -131,26 +119,6 @@ class Evaluator:
             ax3.set_ylabel('Avg Q-Value')
             ax3.grid(True)
 
-=======
-            plt.subplot(2, 3, 5)
-            if self.step_max_q_values:
-                qvals = np.array(self.step_max_q_values)
-                window = 50
-                if len(qvals) > window:
-                    q_ma = np.convolve(qvals, np.ones(window)/window, mode="valid")
-                    plt.plot(q_ma, linewidth=1.5, label="Q-value (MA)", color="brown")
-                else:
-                    plt.plot(qvals, linewidth=1.0, label="Q-value", color="brown")
-                plt.legend()
-            plt.title("Q-value Convergence", fontweight="bold")
-            plt.xlabel("Step")
-            plt.ylabel("Q-value")
-            plt.grid(True, alpha=0.3)
-
-            plt.subplot(2, 3, 6)
-            plt.axis('off')
-            
->>>>>>> b7d0811 (graph changes ppp)
             plt.tight_layout()
             output_path = os.path.join(self.save_dir, "catcher_training_metrics.png")
             plt.savefig(output_path, dpi=150)

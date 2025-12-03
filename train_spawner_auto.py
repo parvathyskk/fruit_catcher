@@ -88,7 +88,6 @@ def main():
             next_state = env.get_spawner_state()
             agent.remember(current_state, current_action, episode_reward, next_state, done)
             
-<<<<<<< HEAD
             result = agent.train_step()
             agent.decay()
             
@@ -97,49 +96,16 @@ def main():
                 evaluator.log_step(loss, agent.epsilon, avg_q)
             else:
                 evaluator.log_step(None, agent.epsilon, None)
-=======
-            res = agent.train_step()
-            agent.decay()
-
-            loss_val = None
-            q_delta = None
-            if res is not None:
-                if isinstance(res, tuple) or (hasattr(res, '__len__') and len(res) == 2):
-                    loss_val, q_delta = res
-                else:
-                    loss_val = res
-
-            # pass the recorded max_q for this decision and q_delta for convergence
-            evaluator.log_step(loss_val, agent.epsilon, max_q=locals().get('last_max_q', None), q_delta=q_delta)
-
-            # Q convergence check for thrower evaluator
-            if q_delta is not None and len(evaluator.q_deltas) >= Q_CONV_WINDOW:
-                if len(evaluator.q_deltas) % Q_CONV_WINDOW == 0:
-                    recent_avg = float(np.mean(evaluator.q_deltas[-Q_CONV_WINDOW:]))
-                    if recent_avg < Q_CONV_THRESHOLD:
-                        q_conv_counter += 1
-                    else:
-                        q_conv_counter = 0
-
-                    if q_conv_counter >= Q_CONV_PATIENCE:
-                        print(f"Q-value convergence detected (thrower): avg change={recent_avg:.6e} (< {Q_CONV_THRESHOLD}); stopping training.")
-                        running = False
-                        break
->>>>>>> b7d0811 (graph changes ppp)
             waiting_for_result = False
             
             
             # if agent.epsilon > agent.eps_min:
             #     print(f"Drop finished. Reward: {episode_reward}, Eps: {agent.epsilon:.3f}")
-<<<<<<< HEAD
             print(f"Buffer size: {len(agent.buffer)}")
 
         # ------------------------------------------------
         # 5. Render (Optional - can comment out for max speed)
         # ------------------------------------------------
-=======
-        
->>>>>>> b7d0811 (graph changes ppp)
         env.render()
         if done:
             current_episode += 1
