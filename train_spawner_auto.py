@@ -2,10 +2,7 @@ import pygame
 from env import FruitCatcherEnv
 from dqn_spawner import SpawnerAgent
 from evaluator_rl_throw import Evaluator
-<<<<<<< HEAD
-import time
-=======
->>>>>>> b7d0811 (graph changes ppp)
+import time 
 import numpy as np
 
 TOTAL_EPISODES = 20
